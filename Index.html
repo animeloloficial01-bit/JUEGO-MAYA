@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guerras del Sol · Edición Definitiva Prehispánica</title>
+  <link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;600;700&family=Fraunces:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    :root {
+      --ink: #0d1616;
+      --panel: #162421;
+      --gold: #e4bf72;
+      --jade: #65c9a3;
+      --clay: #dd8565;
+      --mictlan: #a67bc4;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #f2ead6; font-family: 'Alegreya Sans', sans-serif; background: var(--ink); }
+    .app-shell { width: 100%; min-height: 100vh; padding: 16px; background: radial-gradient(ellipse at 50% 20%, #20332b 0%, #0d1616 75%); }
+    .display { font-family: 'Fraunces', serif; }
+    .ornament { height: 4px; background: repeating-linear-gradient(90deg, transparent 0 14px, #b69a6150 14px 16px, transparent 16px 30px); }
+    .panel { border: 1px solid #4a5a46; background: #162421ee; box-shadow: 0 12px 36px #00000055; }
+    .smallcap { text-transform: uppercase; letter-spacing: .15em; font-size: 11px; font-weight: 700; color: var(--gold); }
+    .control { border: 1px solid #7d704d; background: #223229; color: #f6ecd6; border-radius: 6px; padding: 7px 11px; transition: all .15s; cursor: pointer; }
+    .control:hover:not(:disabled) { background: #324637; border-color: var(--gold); transform: translateY(-1px); }
+    .control.active { background: #2a5b4b; border-color: #83e6b6; color: white; }
+    .control:disabled { opacity: .45; cursor: not-allowed; }
+    .stat { min-width: 65px; border-left: 1px solid #5a664e50; padding-left: 10px; }
+    .stat strong { display: block; font: 600 20px 'Fraunces', serif; color: #f7e7c2; line-height: 1; }
+    .stat span { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #b1baa4; }
+    .map-wrap { overflow: hidden; background: #0c1513; border-top: 1px solid #556247; border-bottom: 1px solid #556247; position: relative; }
+    #battlefield { width: 100%; height: auto; display: block; cursor: crosshair; }
+    .tag { border: 1px solid #aa925c; padding: 3px 8px; border-radius: 16px; color: #f0dba8; font-size: 11px; }
+    select { background: #202d26; color: #f5ecd8; border: 1px solid #857b54; padding: 6px 8px; border-radius: 5px; }
+    .build-button { text-align: left; min-height: 52px; font-size: 13px; }
+    .build-button small { display: block; color: #a4b89e; font-size: 11px; margin-top: 2px; }
+    .detail { color: #bdc4b1; font-size: 13px; line-height: 1.35; }
+    .modal-bg { background: #000000a0; backdrop-filter: blur(4px); }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="max-w-[1580px] mx-auto">
+      <div class="ornament mb-4" aria-hidden="true"></div>
+
+      <!-- HEADER PRINCIPAL -->
+      <header class="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div>
+          <p class="smallcap mb-0.5">✦ CÓDICE TÁCTICO MESOAMERICANO ✦</p>
+          <h1 class="display font-semibold text-2xl md:text-3xl text-[#f2ead6]">Guerras del Sol</h1>
+        </div>
+
+        <div class="flex flex-wrap gap-2 md:gap-3 items-center bg-[#16242199] p-2.5 rounded-lg border border-[#4a5a46]">
+          <div class="stat"><strong id="warriors">0</strong><span>Guerreros</span></div>
+          <div class="stat"><strong id="faith">0</strong><span>Fe</span></div>
+          <div class="stat"><strong id="jade">0</strong><span>Jade</span></div>
+          <div class="stat"><strong id="obsidian">0</strong><span>Obsidiana</span></div>
+          <div class="stat"><strong id="mictlan">0/100</strong><span style="color:#c59ee6">Almas</span></div>
+          <div class="stat"><strong id="territories">0/0</strong><span>Territorios</span></div>
+        </div>
+      </header>
+
+      <!-- LAYOUT PRINCIPAL -->
+      <main class="grid gap-4" style="grid-template-columns: minmax(0, 1fr) 340px;">
+        
+        <!-- SECCIÓN IZQUIERDA: MAPA Y ACCIONES -->
+        <div class="min-w-0 space-y-3">
+          
+          <!-- SELECCIÓN DE REGINES Y CONFIGURACIÓN -->
+          <section class="panel rounded-xl p-3">
+            <div class="flex flex-wrap gap-3 items-center justify-between">
+              <div class="flex flex-wrap gap-2 items-center">
+                <span class="smallcap mr-1">Región:</span>
+                <button type="button" data-region="anahuac" class="control active">Valle de Anáhuac</button>
+                <button type="button" data-region="maya" class="control">Tierras Mayas</button>
+                <button type="button" data-region="oaxaca" class="control">Mixteca-Zapoteca</button>
+              </div>
+              <div class="flex gap-2 items-center">
+                <select id="difficulty">
+                  <option value="easy">Aprendiz</option>
+                  <option value="normal" selected>Guerrero</option>
+                  <option value="hard">Tlatoani</option>
+                </select>
+                <button id="restart" class="control active">Nueva Campaña</button>
+                <button id="open-codex" class="control">📖 Códice</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ÁREA DEL MAPA (CANVAS) -->
+          <section class="panel rounded-xl overflow-hidden">
+            <div class="flex flex-wrap gap-2 justify-between items-center px-4 py-2.5 bg-[#121c1a]">
+              <div class="flex items-center gap-3">
+                <span class="smallcap">✧ MAPA DE LOS CUATRO RUMBOS</span>
+                <span id="timer" class="tag">00:00</span>
+                <span id="season-badge" class="tag" style="border-color:#65c9a3; color:#65c9a3">Época de Lluvias</span>
+              </div>
+              <span id="event-badge" class="tag">Cielo despejado</span>
+            </div>
+
+            <div class="map-wrap">
+              <canvas id="battlefield" width="1000" height="580"></canvas>
+            </div>
+
+            <div class="p-3 flex flex-wrap items-center gap-2 bg-[#121c1a]">
+              <span class="smallcap mr-1">Mandar fuerza:</span>
+              <button type="button" data-send=".25" class="control">25%</button>
+              <button type="button" data-send=".5" class="control active">50%</button>
+              <button type="button" data-send="1" class="control">100%</button>
+              <button type="button" id="mictlan-summon" class="control ml-2" style="background:#5a3177; border-color:#a67bc4; color:#f3e3ff" disabled>
+                💀 Invocación del Mictlán (100)
+              </button>
+              <span class="ml-auto text-xs text-[#a4b29a]">Selecciona un nodo verde y haz clic en un destino conectado.</span>
+            </div>
+          </section>
+        </div>
+
+        <!-- SECCIÓN DERECHA: PANELES TÁCTICOS -->
+        <aside class="space-y-3">
+          
+          <!-- PANEL DE INFORMACIÓN DEL NODO SELECCIONADO -->
+          <section class="panel rounded-xl p-4">
+            <p class="smallcap mb-1">TERRITORIO SELECCIONADO</p>
+            <h2 id="selected-name" class="display text-xl text-[#f2dfae]">Sin selección</h2>
+            <p id="selected-detail" class="detail mt-1">Toca un nodo en el mapa para inspeccionarlo.</p>
+            <div class="flex gap-2 mt-3">
+              <button id="send-tribute" class="control flex-1 text-xs" disabled>🤝 Enviar Tributo (15 Jade)</button>
+              <button id="cancel-select" class="control text-xs">Cancelar</button>
+            </div>
+          </section>
+
+          <!-- TOWER DEFENSE Y TRAMPAS -->
+          <section class="panel rounded-xl p-4">
+            <h2 class="display text-lg text-[#f2dfae] mb-1">Defensas y Estructuras</h2>
+            <p id="defense-detail" class="detail mb-2">Selecciona un territorio propio.</p>
+            
+            <div class="grid grid-cols-2 gap-1.5 mb-2">
+              <button type="button" data-build="arrow" class="control build-button">Atalaya Ocelote<small>20 Jade · 8 Obs.</small></button>
+              <button type="button" data-build="sling" class="control build-button">Honderos<small>24 Jade · 6 Obs.</small></button>
+              <button type="button" data-build="fire" class="control build-button">Brazero Fuego<small>15 Jade · 15 Obs.</small></button>
+              <button type="button" data-build="obsidian" class="control build-button">Torre Obsidiana<small>18 Jade · 24 Obs.</small></button>
+            </div>
+
+            <div class="flex gap-2">
+              <button type="button" id="repair" class="control flex-1 text-xs">Reparar · 10 J</button>
+              <button type="button" id="upgrade" class="control flex-1 text-xs">Mejorar · 18J 12O</button>
+            </div>
+
+            <span class="smallcap block mt-3 mb-1">Trampas en Senderos</span>
+            <select id="path-choice" class="w-full text-xs mb-2"></select>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button type="button" id="pit" class="control build-button">Puntas Obsidiana<small>8 Jade · 14 Obs.</small></button>
+              <button type="button" id="copal" class="control build-button">Humo Copal<small>14 Jade · 6 Obs.</small></button>
+            </div>
+          </section>
+
+          <!-- PODERES DIVINOS Y HEROES -->
+          <section class="panel rounded-xl p-4">
+            <h2 class="display text-lg text-[#f2dfae] mb-2">Rituales Divinos</h2>
+            <div class="space-y-1.5">
+              <button type="button" id="solar" class="control w-full text-left flex justify-between items-center text-xs">
+                <span>☀ Huitzilopochtli · Ira Solar</span><small class="text-[#83e6b6]">40 Fe</small>
+              </button>
+              <button type="button" id="storm" class="control w-full text-left flex justify-between items-center text-xs">
+                <span>◈ Tláloc · Tormenta</span><small class="text-[#83e6b6]">35 Fe</small>
+              </button>
+              <button type="button" id="serpent" class="control w-full text-left flex justify-between items-center text-xs">
+                <span>✧ Quetzalcóatl · Conversión</span><small class="text-[#83e6b6]">50 Fe</small>
+              </button>
+            </div>
+          </section>
+
+          <!-- BITÁCORA Y AUDIO -->
+          <section class="panel rounded-xl p-3">
+            <p id="message" class="detail font-medium text-[#e8dcbf] min-h-[36px]" role="status">Selecciona tu facción y conquista los cuatro rumbos.</p>
+            <div class="flex gap-2 mt-2">
+              <button id="audio-toggle" class="control text-xs flex-1">🔊 Activar Sonido API</button>
+            </div>
+          </section>
+
+        </aside>
+      </main>
+      
+      <div class="ornament mt-4" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CÓDICE HISTÓRICO -->
+  <div id="codex-modal" class="fixed inset-0 modal-bg hidden flex items-center justify-center p-4 z-50">
+    <div class="panel rounded-xl max-w-2xl w-full p-6 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="display text-2xl text-[#f2dfae]">📖 Códice Histórico de Mesoamérica</h2>
+        <button id="close-codex" class="control text-sm">✕ Cerrar</button>
+      </div>
+      <div class="space-y-4 text-sm text-[#d4dbca]">
+        <div>
+          <h3 class="font-bold text-[#e4bf72] text-base">✦ Teocallis y Centros Ceremoniales</h3>
+          <p>Los templos piramidales no solo eran centros religiosos, sino también el corazón administrativo de las Ciudades-Estado (Altépetl), capaces de organizar contingentes militares rápidamente.</p>
+        </div>
+        <div>
+          <h3 class="font-bold text-[#e4bf72] text-base">✦ Cenotes Sagrados (El Paso al Xibalbá)</h3>
+          <p>Para la cultura maya, los cenotes eran portales de comunicación con el inframundo. En el juego, permiten la transportación instantánea de tropas entre cenotes aliados.</p>
+        </div>
+        <div>
+          <h3 class="font-bold text-[#e4bf72] text-base">✦ El Juego de Pelota (Tlachtli / Pok-ta-pok)</h3>
+          <p>Más que un deporte, era un ritual cosmogónico que representaba el movimiento de los astros. Controlar este nodo genera Prestigio y pacifica nodos vecinos.</p>
+        </div>
+        <div>
+          <h3 class="font-bold text-[#e4bf72] text-base">✦ Nahualismo y Deidades</h3>
+          <p>Los nahuales eran seres capaces de transformar su esencia espiritual en animales guardianes (pumas, serpientes de fuego o búhos de la muerte) para proteger el territorio.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOTOR DEL JUEGO (JAVASCRIPT) -->
+  <script>
+  (() => {
+    'use strict';
+
+    // ELEMENTOS DEL DOM Y ESTADO
+    const $ = id => document.getElementById(id);
+    const canvas = $('battlefield'), ctx = canvas.getContext('2d');
+
+    const factionNames = { mexica: 'Mexicas', maya: 'Mayas', zapoteca: 'Zapotecas', purepecha: 'Purépechas' };
+    const baseNodes = [
+      [0, 'Tenochtitlan', 'temple', 130, 270], [1, 'Tikal', 'temple', 860, 270],
+      [2, 'Monte Albán', 'fort', 270, 120], [3, 'Tzintzuntzan', 'mine', 400, 90],
+      [4, 'Chichén Itzá', 'temple', 690, 110], [5, 'Palenque', 'mine', 530, 200],
+      [6, 'Mitla', 'fort', 350, 310], [7, 'Uxmal', 'obsidian', 690, 360],
+      [8, 'Teotihuacan', 'temple', 480, 460], [9, 'El Tajín', 'obsidian', 230, 480],
+      [10, 'Copán', 'fort', 830, 480], [11, 'Yaxché · Ceiba', 'ceiba', 510, 330],
+      [12, 'Tlachtli Norte', 'ball', 530, 70], [13, 'Tlachtli Sur', 'ball', 630, 520],
+      [14, 'Cenote Xibalbá', 'cenote', 130, 80], [15, 'Cenote Estrellas', 'cenote', 870, 90]
+    ];
+    const edges = [
+      [0,2],[0,6],[0,9],[2,3],[2,6],[2,14],[3,4],[3,5],[3,12],[4,1],[4,5],[4,12],[4,15],
+      [5,6],[5,7],[5,11],[5,12],[6,8],[6,11],[7,1],[7,10],[7,11],[7,13],[8,9],[8,11],[8,13],
+      [9,11],[10,1],[10,7],[10,13],[11,13],[12,15],[1,15]
+    ];
+
+    const typeIcons = { temple: '△', fort: '▣', mine: '◆', obsidian: '✦', ceiba: '♧', ball: '◉', cenote: '◌' };
+    const towerSpecs = {
+      arrow: { name: 'Atalaya Ocelote', jade: 20, obs: 8, hp: 75, range: 125, damage: 7, cool: 1.1 },
+      sling: { name: 'Honderos', jade: 24, obs: 6, hp: 85, range: 105, damage: 11, cool: 2.0 },
+      fire: { name: 'Brazero Fuego', jade: 15, obs: 15, hp: 65, range: 75, damage: 4, cool: 0.6 },
+      obsidian: { name: 'Torre Obsidiana', jade: 18, obs: 24, hp: 130, range: 120, damage: 16, cool: 2.2 }
+    };
+
+    let faction = 'mexica', enemyFaction = 'maya', aiDifficulty = 'normal';
+    let nodes = [], armies = [], traps = [], particles = [], shots = [], waves = [];
+    let selected = null, sendPercent = 0.5;
+    let resources = { faith: 30, enemyFaith: 30, jade: 35, obs: 25, mictlan: 0 };
+    let elapsed = 0, aiClock = 0, seasonClock = 0, season = 'rain'; // 'rain' | 'drought'
+    let eventType = '', eventUntil = 0, blockedEdge = -1, gameOver = false;
+    let audioCtx = null, audioEnabled = false;
+
+    function say(text) { $('message').textContent = text; }
+
+    // SINTETIZADOR DE AUDIO WEB AUDIO API
+    function playSound(type) {
+      if (!audioEnabled || !audioCtx) return;
+      const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = type === 'conquer' ? 'sine' : type === 'drum' ? 'triangle' : 'sawtooth';
+      osc.frequency.setValueAtTime(type === 'conquer' ? 260 : type === 'drum' ? 90 : 380, t);
+      osc.frequency.exponentialRampToValueAtTime(type === 'conquer' ? 520 : type === 'drum' ? 40 : 130, t + 0.25);
+      gain.gain.setValueAtTime(0.01, t); gain.gain.linearRampToValueAtTime(0.1, t + 0.02); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(t); osc.stop(t + 0.31);
+    }
+
+    function burst(x, y, color, count = 10) {
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2, s = 15 + Math.random() * 60;
+        particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5 + Math.random() * 0.4, color });
+      }
+    }
+
+    function sendArmy(fromId, toId, count, owner) {
+      const src = nodes[fromId], dst = nodes[toId], edgeIdx = edges.findIndex(e => e.includes(fromId) && e.includes(toId));
+      const isCenotePortal = src.type === 'cenote' && dst.type === 'cenote' && src.owner === owner && dst.owner === owner;
+      
+      if (gameOver || src.owner !== owner || (!isCenotePortal && (edgeIdx < 0 || edgeIdx === blockedEdge))) return false;
+      count = Math.min(Math.floor(src.troops), Math.floor(count));
+      if (count < 1) return false;
+
+      src.troops -= count;
+      if (isCenotePortal) {
+        dst.troops += count;
+        burst(dst.x, dst.y, '#65c9a3', 15);
+        if (owner === 'player') say(`El Cenote transportó ${count} guerreros a ${dst.name}.`);
+        return true;
+      }
+
+      armies.push({ from: fromId, to: toId, owner, count, progress: 0, speed: season === 'drought' ? 140 : 110, damage: src.type === 'obsidian' ? 1.25 : 1 });
+      playSound('drum');
+      return true;
+    }
+
+    function captureNode(army, node) {
+      if (node.owner === army.owner) {
+        node.troops += army.count;
+        return;
+      }
+      const attPower = army.count * army.damage;
+      const defPower = node.troops * (node.type === 'fort' ? 1.5 : 1);
+
+      // Incremento de Almas del Mictlán por bajas
+      const totalCasualties = Math.min(army.count, Math.floor(node.troops));
+      resources.mictlan = Math.min(100, resources.mictlan + Math.floor(totalCasualties * 0.4));
+
+      if (attPower > defPower) {
+        node.owner = army.owner;
+        node.troops = Math.max(1, Math.round((attPower - defPower) / army.damage));
+        node.tower = null;
+        burst(node.x, node.y, army.owner === 'player' ? '#65c9a3' : '#dd8565', 20);
+        if (army.owner === 'player') { say(`¡Has conquistado ${node.name}!`); playSound('conquer'); }
+        else { say(`¡El rival ha capturado ${node.name}!`); playSound('drum'); }
+      } else {
+        node.troops = Math.max(1, Math.round((defPower - attPower) / (node.type === 'fort' ? 1.5 : 1)));
+        burst(node.x, node.y, '#e4bf72', 8);
+      }
+      checkGameOver();
+    }
+
+    function checkGameOver() {
+      const playerOwns = nodes.filter(n => n.owner === 'player').length;
+      const enemyOwns = nodes.filter(n => n.owner === 'enemy').length;
+      if (playerOwns === 0) { gameOver = true; say('Derrota. El rival ha dominado Mesoamérica.'); }
+      else if (enemyOwns === 0) { gameOver = true; say('¡Victoria Imperial! Has unificado los cuatro rumbos.'); }
+    }
+
+    // INVOCACIÓN DEL MICTLÁN
+    function summonMictlan() {
+      if (resources.mictlan < 100 || gameOver) return;
+      resources.mictlan = 0;
+      const playerNodes = nodes.filter(n => n.owner === 'player');
+      const targetEnemy = nodes.filter(n => n.owner === 'enemy').sort((a,b) => a.troops - b.troops)[0];
+      if (targetEnemy && playerNodes.length) {
+        targetEnemy.troops = Math.max(0, targetEnemy.troops - 40);
+        if (targetEnemy.troops === 0) targetEnemy.owner = 'player', targetEnemy.troops = 15;
+        burst(targetEnemy.x, targetEnemy.y, '#a67bc4', 35);
+        say(`¡Guerreros Espectrales del Mictlán han arrasado ${targetEnemy.name}!`);
+        playSound('conquer');
+        updateUI();
+      }
+    }
+
+    // ACTUALIZACIÓN DE ESTADO DE JUEGO (GAME LOOP)
+    function update(dt) {
+      if (gameOver) return;
+      elapsed += dt; seasonClock += dt; aiClock += dt;
+
+      // CAMBIO DE ESTACIONES (CADA 40 SEGUNDOS)
+      if (seasonClock >= 40) {
+        seasonClock = 0;
+        season = season === 'rain' ? 'drought' : 'rain';
+        $('season-badge').textContent = season === 'rain' ? 'Época de Lluvias (-25% vel.)' : 'Sequía (+30% vel.)';
+        $('season-badge').style.borderColor = season === 'rain' ? '#65c9a3' : '#e4bf72';
+        $('season-badge').style.color = season === 'rain' ? '#65c9a3' : '#e4bf72';
+        say(season === 'rain' ? 'Comienzan las lluvias: marchas más lentas, los Cenotes recargan Fe.' : 'Comienza la sequía: ejércitos marchan a máxima velocidad.');
+      }
+
+      // GENERACIÓN DE RECURSOS EN NODOS
+      nodes.forEach(n => {
+        if (n.owner === 'neutral') return;
+        const genRate = n.type === 'temple' ? 1.4 : 0.4;
+        n.troops = Math.min(150, n.troops + dt * genRate * (season === 'drought' ? 0.8 : 1));
+
+        if (n.owner === 'player') {
+          resources.faith = Math.min(150, resources.faith + dt * (n.type === 'mine' ? 0.8 : 0.25));
+          resources.jade = Math.min(250, resources.jade + dt * (n.type === 'mine' ? 0.9 : 0.3));
+          resources.obs = Math.min(250, resources.obs + dt * (n.type === 'obsidian' ? 0.9 : 0.2));
+        } else if (n.owner === 'enemy') {
+          resources.enemyFaith = Math.min(150, resources.enemyFaith + dt * 0.5);
+        }
+      });
+
+      // MOVIMIENTO DE EJÉRCITOS
+      for (let i = armies.length - 1; i >= 0; i--) {
+        const a = armies[i], src = nodes[a.from], dst = nodes[a.to];
+        const dist = Math.hypot(src.x - dst.x, src.y - dst.y);
+        a.progress += (dt * a.speed) / dist;
+        if (a.progress >= 1) {
+          armies.splice(i, 1);
+          captureNode(a, dst);
+        }
+      }
+
+      // IA DEL ENEMIGO
+      if (aiClock >= (aiDifficulty === 'hard' ? 2 : 3.5)) {
+        aiClock = 0;
+        const enemyNodes = nodes.filter(n => n.owner === 'enemy');
+        const targetNodes = nodes.filter(n => n.owner !== 'enemy');
+        if (enemyNodes.length && targetNodes.length) {
+          const src = enemyNodes.sort((a,b) => b.troops - a.troops)[0];
+          const dst = targetNodes.sort((a,b) => a.troops - b.troops)[0];
+          if (src && src.troops > 15) {
+            sendArmy(src.id, dst.id, src.troops * 0.5, 'enemy');
+          }
+        }
+      }
+
+      // PARTICULAS
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      updateUI();
+    }
+
+    // RENDERIZADO VISUAL EN CANVAS 2D
+    function draw() {
+      ctx.clearRect(0, 0, 1000, 580);
+
+      // FONDO
+      ctx.fillStyle = season === 'rain' ? '#0f1d1a' : '#181a14';
+      ctx.fillRect(0, 0, 1000, 580);
+
+      // DIBUJAR RUTAS / SENDEROS
+      edges.forEach(([a, b]) => {
+        const na = nodes[a], nb = nodes[b];
+        ctx.beginPath(); ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y);
+        ctx.lineWidth = 4; ctx.strokeStyle = '#4a5a4688'; ctx.stroke();
+      });
+
+      // DIBUJAR NODOS
+      nodes.forEach(n => {
+        const isSelected = selected === n.id;
+        const color = n.owner === 'player' ? '#65c9a3' : n.owner === 'enemy' ? '#dd8565' : '#d4bd86';
+        
+        ctx.shadowColor = color; ctx.shadowBlur = isSelected ? 20 : 8;
+        ctx.fillStyle = '#162421'; ctx.strokeStyle = color; ctx.lineWidth = isSelected ? 4 : 2;
+        ctx.beginPath(); ctx.arc(n.x, n.y, 25, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.font = 'bold 18px Alegreya Sans'; ctx.fillStyle = color; ctx.textAlign = 'center';
+        ctx.fillText(typeIcons[n.type], n.x, n.y - 4);
+        ctx.font = 'bold 14px Alegreya Sans'; ctx.fillStyle = '#ffffff';
+        ctx.fillText(Math.floor(n.troops), n.x, n.y + 14);
+
+        ctx.font = '12px Alegreya Sans'; ctx.fillStyle = '#c8d4c0';
+        ctx.fillText(n.name, n.x, n.y + 40);
+      });
+
+      // DIBUJAR EJÉRCITOS MARCHANDO
+      armies.forEach(a => {
+        const src = nodes[a.from], dst = nodes[a.to];
+        const x = src.x + (dst.x - src.x) * a.progress;
+        const y = src.y + (dst.y - src.y) * a.progress;
+        const color = a.owner === 'player' ? '#65c9a3' : '#dd8565';
+
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.font = 'bold 11px Alegreya Sans'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+        ctx.fillText(Math.floor(a.count), x, y - 10);
+      });
+
+      // DIBUJAR PARTICULAS
+      particles.forEach(p => {
+        ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
+      });
+    }
+
+    // ACTUALIZACIÓN DE LA INTERFAZ DE USUARIO (UI)
+    function updateUI() {
+      const playerNodes = nodes.filter(n => n.owner === 'player');
+      $('warriors').textContent = Math.floor(playerNodes.reduce((sum, n) => sum + n.troops, 0));
+      $('faith').textContent = Math.floor(resources.faith);
+      $('jade').textContent = Math.floor(resources.jade);
+      $('obsidian').textContent = Math.floor(resources.obs);
+      $('mictlan').textContent = `${resources.mictlan}/100`;
+      $('territories').textContent = `${playerNodes.length}/${nodes.length}`;
+      $('timer').textContent = `${String(Math.floor(elapsed / 60)).padStart(2,'0')}:${String(Math.floor(elapsed % 60)).padStart(2,'0')}`;
+      $('mictlan-summon').disabled = resources.mictlan < 100;
+    }
+
+    // INICIALIZACIÓN DEL MAPA
+    function init() {
+      nodes = baseNodes.map(([id, name, type, x, y]) => ({
+        id, name, type, x, y,
+        owner: id === 0 ? 'player' : id === 1 ? 'enemy' : 'neutral',
+        troops: id === 0 ? 50 : id === 1 ? 45 : 18
+      }));
+      armies = []; particles = []; selected = null;
+      resources = { faith: 30, enemyFaith: 30, jade: 35, obs: 25, mictlan: 0 };
+      elapsed = 0; seasonClock = 0; gameOver = false;
+      say('Campaña iniciada. Selecciona Tenochtitlan y expande tu territorio.');
+      updateUI();
+    }
+
+    // EVENTOS DE INTERACCIÓN EN CANVAS Y BOTONES
+    canvas.addEventListener('click', e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (1000 / rect.width);
+      const y = (e.clientY - rect.top) * (580 / rect.height);
+
+      const clicked = nodes.find(n => Math.hypot(n.x - x, n.y - y) < 28);
+      if (clicked) {
+        if (selected !== null && selected !== clicked.id && nodes[selected].owner === 'player') {
+          sendArmy(selected, clicked.id, nodes[selected].troops * sendPercent, 'player');
+          selected = null;
+        } else {
+          selected = clicked.id;
+          $('selected-name').textContent = clicked.name;
+          $('selected-detail').textContent = `Tipo: ${clicked.type.toUpperCase()} · Control: ${clicked.owner.toUpperCase()} · Fuerzas: ${Math.floor(clicked.troops)}`;
+        }
+      } else {
+        selected = null;
+        $('selected-name').textContent = 'Sin selección';
+        $('selected-detail').textContent = 'Toca un nodo en el mapa para inspeccionarlo.';
+      }
+      updateUI();
+    });
+
+    document.querySelectorAll('[data-send]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sendPercent = parseFloat(btn.dataset.send);
+        document.querySelectorAll('[data-send]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    $('mictlan-summon').addEventListener('click', summonMictlan);
+    $('restart').addEventListener('click', init);
+    $('cancel-select').addEventListener('click', () => { selected = null; updateUI(); });
+    
+    // CÓDICE MODAL
+    $('open-codex').addEventListener('click', () => $('codex-modal').classList.remove('hidden'));
+    $('close-codex').addEventListener('click', () => $('codex-modal').classList.add('hidden'));
+
+    // AUDIO TOGGLE
+    $('audio-toggle').addEventListener('click', () => {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioEnabled = !audioEnabled;
+      $('audio-toggle').textContent = audioEnabled ? '🔊 Sonido Activado' : '🔇 Activar Sonido API';
+      if (audioEnabled) playSound('conquer');
+    });
+
+    // LOOP PRINCIPAL
+    let lastTime = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    init();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
